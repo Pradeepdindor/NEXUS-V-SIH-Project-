@@ -1,0 +1,54 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# C extensions
+*.obj
+*.o
+*.a
+*.lib
+*.pyd
+
+# Executables and binary tools
+*.exe
+cloudflared.exe
+sqlite3.exe
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+
+# IDE and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Cloudflare tunnel temporary outputs
+public_url.txt
+
+# Heavy raw datasets and video recordings
+dataset/fresh_dataset/
+dataset/data/recordings/
+dataset/data/snapshots/
+dataset/data/alerts/
+dataset/data/tickets/
+
+# Video files (except sample demo feed)
+*.mp4
+!dataset/data/sample_driving_feed.mp4
+
+# Databases & local runtime data
+*.db
+*.sqlite
+*.sqlite3
+dataset/data/*.db
+
+# Training runs and outputs
+runs/

@@ -1,0 +1,15 @@
+# ==============================================================================
+# Fresh Custom YOLOv8 Road Defect Dataset (N1 + N2)
+# Smart India Hackathon - Problem Statement 26124 / 24124
+# Classes: 0: pothole, 1: crack, 2: manhole
+# ==============================================================================
+
+path: C:/Users/gauta/OneDrive/Desktop/g/SIH - Copy/dataset/fresh_dataset
+train: train/images
+val: val/images
+
+nc: 3
+names:
+  0: pothole
+  1: crack
+  2: manhole

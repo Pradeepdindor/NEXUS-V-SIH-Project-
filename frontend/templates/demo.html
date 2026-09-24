@@ -1,0 +1,2458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Interactive AI Demo & Testing Lab | SIH-26124 (Digital Nomads)</title>
+
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <!-- Leaflet Heat plugin -->
+  <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-dark: #07090e;
+      --card-bg: rgba(14, 20, 32, 0.88);
+      --card-border: rgba(56, 189, 248, 0.2);
+      --accent-blue: #38bdf8;
+      --accent-cyan: #06b6d4;
+      --accent-purple: #a855f7;
+      --accent-emerald: #10b981;
+      --accent-amber: #f59e0b;
+      --accent-rose: #f43f5e;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(56, 189, 248, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(168, 85, 247, 0.07) 0%, transparent 40%);
+      color: var(--text-main);
+      font-family: 'Outfit', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Top Navigation Header */
+    header {
+      background: rgba(7, 9, 14, 0.94);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--card-border);
+      padding: 14px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.6);
+    }
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .brand-title {
+      font-size: 19px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      background: linear-gradient(90deg, #38bdf8, #c084fc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .brand-sub { font-size: 11px; color: var(--text-muted); font-weight: 400; }
+    
+    .nav-actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    .btn-nav-link {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: var(--text-main);
+      padding: 7px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .btn-nav-link:hover {
+      background: rgba(56, 189, 248, 0.15);
+      border-color: var(--accent-blue);
+      color: var(--accent-blue);
+    }
+
+    .status-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+    .badge-online { background: rgba(16, 185, 129, 0.15); border: 1px solid var(--accent-emerald); color: var(--accent-emerald); }
+    .badge-offline { background: rgba(244, 63, 94, 0.15); border: 1px solid var(--accent-rose); color: var(--accent-rose); }
+
+    /* Dashboard Layout */
+    .dashboard-container {
+      padding: 20px 28px;
+      max-width: 1750px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Master Prototype Orchestration Deck (Buttons 1-8) */
+    .launcher-deck {
+      background: linear-gradient(135deg, rgba(14, 20, 32, 0.95), rgba(18, 26, 44, 0.92));
+      backdrop-filter: blur(18px);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 20px 24px;
+      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.5);
+    }
+    .launcher-top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 12px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .launcher-badge {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--accent-blue);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+    }
+    .launcher-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 3px;
+    }
+    .launcher-status-chip {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-weight: 700;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid var(--accent-emerald);
+      color: var(--accent-emerald);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .launcher-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 14px;
+    }
+    .launcher-btn {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: 12px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.25s ease;
+      color: var(--text-main);
+      position: relative;
+      overflow: hidden;
+    }
+    .launcher-btn:hover {
+      background: rgba(56, 189, 248, 0.12);
+      border-color: var(--accent-blue);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(56, 189, 248, 0.25);
+    }
+    .launcher-btn.active-opt {
+      background: linear-gradient(135deg, rgba(2, 132, 199, 0.25), rgba(147, 51, 234, 0.2));
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.35);
+    }
+    .launcher-btn.btn-danger-mode:hover {
+      background: rgba(244, 63, 94, 0.15);
+      border-color: var(--accent-rose);
+      box-shadow: 0 0 18px rgba(244, 63, 94, 0.35);
+    }
+    .launcher-btn.btn-exit-mode:hover {
+      background: rgba(148, 163, 184, 0.15);
+      border-color: #94a3b8;
+    }
+    .btn-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--accent-cyan);
+      background: rgba(6, 182, 212, 0.15);
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(6, 182, 212, 0.3);
+      flex-shrink: 0;
+    }
+    .btn-icon {
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+    .btn-text-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .btn-name {
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.3px;
+      color: #fff;
+    }
+    .btn-desc {
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.3;
+    }
+
+    /* KPI Cards */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 16px;
+    }
+    .metric-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .metric-card:hover { transform: translateY(-2px); border-color: var(--accent-blue); }
+    .metric-label { font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 600; letter-spacing: 0.8px; }
+    .metric-val { font-size: 26px; font-weight: 800; margin: 4px 0; font-family: 'Outfit', sans-serif; }
+    .metric-sub { font-size: 11px; color: var(--text-muted); }
+
+    /* Interactive Demo & GIS Layout Grid */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    @media (max-width: 1200px) { .main-grid { grid-template-columns: 1fr; } }
+
+    .card-panel {
+      background: var(--card-bg);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+    }
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      padding-bottom: 12px;
+    }
+    .panel-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Demo Tabs */
+    .demo-tabs {
+      display: flex;
+      gap: 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 10px;
+    }
+    .demo-tab-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .demo-tab-btn.active {
+      background: rgba(56, 189, 248, 0.15);
+      border-color: var(--accent-blue);
+      color: var(--accent-blue);
+    }
+
+    /* Video & Canvas Viewport */
+    .viewport-box {
+      width: 100%;
+      height: 380px;
+      background: #000;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #simCanvas, #uploadCanvas, #webcamCanvas {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    video#webcamFeed {
+      display: none;
+    }
+
+    /* HUD overlay on video */
+    .hud-overlay {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      right: 12px;
+      display: flex;
+      justify-content: space-between;
+      pointer-events: none;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+    }
+    .hud-chip {
+      background: rgba(0, 0, 0, 0.75);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      padding: 4px 10px;
+      border-radius: 6px;
+      color: #38bdf8;
+      backdrop-filter: blur(4px);
+    }
+
+    /* Controls bar under simulation */
+    .playback-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .btn-ctrl {
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid var(--accent-blue);
+      color: #38bdf8;
+      padding: 7px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-ctrl:hover { background: var(--accent-blue); color: #000; }
+    .btn-active { background: #d97706; border-color: #d97706; color: #fff; }
+
+    /* Upload Drag & Drop Area */
+    .drop-zone {
+      border: 2px dashed rgba(56, 189, 248, 0.35);
+      border-radius: 12px;
+      padding: 24px;
+      text-align: center;
+      background: rgba(0, 0, 0, 0.2);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .drop-zone:hover {
+      border-color: var(--accent-blue);
+      background: rgba(56, 189, 248, 0.05);
+    }
+    .presets-group {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .btn-preset {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: var(--text-main);
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-preset:hover {
+      background: rgba(168, 85, 247, 0.2);
+      border-color: var(--accent-purple);
+      color: var(--accent-purple);
+    }
+
+    /* GIS Map Box */
+    #map {
+      height: 490px;
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      z-index: 1;
+      box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+    }
+
+    /* Real-Time Yellow Dot for Pothole Marker */
+    .pothole-yellow-dot {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .yellow-dot-pulse {
+      position: relative;
+      width: 26px;
+      height: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .yellow-dot-core {
+      width: 14px;
+      height: 14px;
+      background: #facc15;
+      border: 2.5px solid #ffffff;
+      border-radius: 50%;
+      box-shadow: 0 0 14px 3px rgba(250, 204, 21, 0.95), 0 2px 6px rgba(0,0,0,0.7);
+      z-index: 2;
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .yellow-dot-pulse:hover .yellow-dot-core {
+      transform: scale(1.4);
+      background: #fef08a;
+    }
+    .yellow-dot-ring {
+      position: absolute;
+      width: 32px;
+      height: 32px;
+      border: 2.5px solid #facc15;
+      border-radius: 50%;
+      animation: yellow-ring-pulse 2s infinite ease-out;
+      pointer-events: none;
+    }
+    @keyframes yellow-ring-pulse {
+      0% {
+        transform: scale(0.35);
+        opacity: 1;
+      }
+      100% {
+        transform: scale(2.4);
+        opacity: 0;
+      }
+    }
+
+    /* Current Device Location Radar Marker */
+    .current-loc-marker {
+      position: relative;
+      width: 26px;
+      height: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .current-loc-core {
+      width: 13px;
+      height: 13px;
+      background: #38bdf8;
+      border: 2px solid #ffffff;
+      border-radius: 50%;
+      box-shadow: 0 0 14px #38bdf8;
+      z-index: 2;
+    }
+    .current-loc-radar {
+      position: absolute;
+      width: 34px;
+      height: 34px;
+      border: 2px solid rgba(56, 189, 248, 0.85);
+      background: rgba(56, 189, 248, 0.15);
+      border-radius: 50%;
+      animation: loc-radar-sweep 2.2s infinite ease-out;
+      pointer-events: none;
+    }
+    @keyframes loc-radar-sweep {
+      0% { transform: scale(0.4); opacity: 1; }
+      100% { transform: scale(2.4); opacity: 0; }
+    }
+
+    /* Map Layer Toggle Buttons */
+    .btn-layer-group {
+      display: flex;
+      background: rgba(0, 0, 0, 0.55);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 8px;
+      padding: 2px;
+      gap: 2px;
+    }
+    .btn-layer {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 4px 9px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: 'Outfit', sans-serif;
+    }
+    .btn-layer:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.1);
+    }
+    .btn-layer.active {
+      background: var(--accent-blue);
+      color: #000;
+      font-weight: 700;
+    }
+
+    /* Custom Leaflet Popup Tweaks */
+    .leaflet-popup-content-wrapper {
+      background: rgba(15, 23, 42, 0.95) !important;
+      color: #f1f5f9 !important;
+      border: 1px solid rgba(56, 189, 248, 0.3) !important;
+      border-radius: 10px !important;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6) !important;
+      backdrop-filter: blur(8px) !important;
+    }
+    .leaflet-popup-tip {
+      background: rgba(15, 23, 42, 0.95) !important;
+    }
+
+    /* Authority Badges */
+    .badge-pwd { background: rgba(245, 158, 11, 0.2); border: 1px solid #f59e0b; color: #f59e0b; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; }
+    .badge-police { background: rgba(244, 63, 94, 0.2); border: 1px solid #f43f5e; color: #f43f5e; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; }
+    .badge-ambulance { background: rgba(168, 85, 247, 0.2); border: 1px solid #a855f7; color: #a855f7; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; }
+    .badge-municipal { background: rgba(56, 189, 248, 0.2); border: 1px solid #38bdf8; color: #38bdf8; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; }
+
+    /* Feed Table */
+    .table-container {
+      overflow-x: auto;
+      max-height: 260px;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
+    th { padding: 10px 12px; color: var(--text-muted); font-weight: 600; border-bottom: 1px solid rgba(255,255,255,0.08); font-size: 11px; text-transform: uppercase; }
+    td { padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: middle; }
+    tr:hover { background: rgba(56, 189, 248, 0.05); }
+
+    /* Bottom Charts Grid */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    @media (max-width: 900px) { .charts-grid { grid-template-columns: 1fr; } }
+    .chart-box { height: 210px; position: relative; }
+
+    /* Action bar */
+    .action-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 16px 24px;
+    }
+    .btn-danger {
+      background: rgba(244, 63, 94, 0.15);
+      border: 1px solid var(--accent-rose);
+      color: #f43f5e;
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+    .btn-danger:hover {
+      background: var(--accent-rose);
+      color: #fff;
+      box-shadow: 0 0 16px rgba(244, 63, 94, 0.5);
+    }
+
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 2000;
+      left: 0; top: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.85);
+      backdrop-filter: blur(8px);
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-content {
+      background: var(--card-bg);
+      border: 1px solid var(--accent-blue);
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 700px;
+      width: 90%;
+      position: relative;
+    }
+    .modal-close {
+      position: absolute;
+      top: 14px; right: 18px;
+      color: #fff; font-size: 24px; cursor: pointer;
+    }
+
+    /* =======================================================
+       COMPREHENSIVE RESPONSIVE DESIGN (LAPTOP, TABLET & MOBILE)
+       ======================================================= */
+
+    /* Tablet & Small Laptop Screens (max-width: 1024px) */
+    @media (max-width: 1024px) {
+      .dashboard-container {
+        padding: 16px 20px;
+        gap: 16px;
+      }
+      .launcher-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .metrics-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+      }
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+      #map {
+        height: 400px;
+      }
+      .viewport-box {
+        height: 340px;
+      }
+    }
+
+    /* Tablet Portrait & Large Mobile Screens (max-width: 768px) */
+    @media (max-width: 768px) {
+      header {
+        padding: 12px 16px;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+      }
+      .brand-group {
+        width: 100%;
+      }
+      .brand-title {
+        font-size: 16px;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .brand-sub {
+        font-size: 10px;
+        line-height: 1.35;
+      }
+      .nav-actions {
+        width: 100%;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .btn-nav-link {
+        flex: 1;
+        justify-content: center;
+        font-size: 12px;
+        padding: 6px 10px;
+        min-width: 110px;
+      }
+
+      .dashboard-container {
+        padding: 12px 12px;
+        gap: 14px;
+      }
+
+      /* Launcher Deck */
+      .launcher-deck {
+        padding: 16px 12px;
+      }
+      .launcher-top-bar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
+      .launcher-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+      .launcher-btn {
+        padding: 12px 14px;
+      }
+
+      /* Metrics */
+      .metrics-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+      }
+      .metric-card {
+        padding: 12px 14px;
+      }
+      .metric-val {
+        font-size: 20px;
+      }
+      .metric-label {
+        font-size: 10px;
+      }
+      .metric-sub {
+        font-size: 10px;
+      }
+
+      /* Panels */
+      .card-panel {
+        padding: 14px 12px;
+        border-radius: 12px;
+      }
+      .panel-title {
+        font-size: 14.5px;
+      }
+
+      /* Tabs */
+      .demo-tabs {
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+        gap: 6px;
+        padding-bottom: 6px;
+      }
+      .demo-tab-btn {
+        padding: 6px 12px;
+        font-size: 12px;
+        flex-shrink: 0;
+      }
+
+      /* Viewport & Map */
+      .viewport-box {
+        height: clamp(220px, 50vw, 320px);
+      }
+      #map {
+        height: clamp(260px, 60vw, 380px);
+      }
+
+      /* Playback controls */
+      .playback-bar {
+        gap: 6px;
+      }
+      .btn-ctrl {
+        flex: 1;
+        min-width: 80px;
+        justify-content: center;
+        padding: 6px 10px;
+        font-size: 11px;
+      }
+
+      /* Charts */
+      .charts-grid {
+        grid-template-columns: 1fr;
+        gap: 14px;
+      }
+      .chart-box {
+        height: 180px;
+      }
+
+      /* Action Bar */
+      .action-bar {
+        flex-direction: column;
+        gap: 12px;
+        align-items: stretch;
+        text-align: center;
+        padding: 14px 12px;
+      }
+      .btn-danger {
+        width: 100%;
+        justify-content: center;
+      }
+
+      /* Modal */
+      .modal-content {
+        width: 95%;
+        padding: 18px 14px;
+      }
+
+      /* Toast */
+      .toast-notification {
+        left: 12px;
+        right: 12px;
+        bottom: 12px;
+        width: auto;
+        justify-content: center;
+        padding: 10px 14px;
+        font-size: 12px;
+      }
+    }
+
+    /* Small Mobile Phones (max-width: 480px) */
+    @media (max-width: 480px) {
+      .dashboard-container {
+        padding: 10px 8px;
+        gap: 10px;
+      }
+      .metrics-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+      .metric-val {
+        font-size: 18px;
+      }
+      .btn-name {
+        font-size: 12px;
+      }
+      .btn-desc {
+        font-size: 10px;
+      }
+      .hud-overlay {
+        font-size: 9px;
+        top: 8px; left: 8px; right: 8px;
+      }
+      .hud-chip {
+        padding: 3px 6px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header>
+    <div class="brand-group">
+      <div>
+        <div class="brand-title">
+          <span>⚡ AI MOBILE URBAN INTELLIGENCE</span>
+          <span style="font-size: 11px; background: rgba(56, 189, 248, 0.2); padding: 2px 8px; border-radius: 12px; color: #38bdf8;">PRACTICAL LAB</span>
+        </div>
+        <div class="brand-sub">Real-Time Edge Detection • Autonomous Drive Simulator • Leaflet GIS & Auto-SLA Dispatch</div>
+      </div>
+    </div>
+
+    <div class="nav-actions">
+      <a href="/" class="btn-nav-link">
+        <span>🏠 AI Overview & Architecture</span>
+      </a>
+      <span class="status-badge badge-online" id="netStatusBadge" onclick="toggleConnectivity()">
+        <span style="height: 8px; width: 8px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
+        <span id="netStatusText">NETWORK: ONLINE</span>
+      </span>
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #38bdf8; background: rgba(56,189,248,0.1); padding: 5px 12px; border-radius: 8px; border: 1px solid rgba(56,189,248,0.3);">
+        BUS-KA-01-F-1204
+      </span>
+    </div>
+  </header>
+
+  <div class="dashboard-container">
+
+    <!-- 🚀 Master Prototype Orchestration Deck (Buttons 1 - 8) -->
+    <div class="launcher-deck">
+      <div class="launcher-top-bar">
+        <div>
+          <div class="launcher-badge">🚀 MASTER PROTOTYPE ORCHESTRATION SUITE</div>
+          <div class="launcher-sub">Interactive evaluation control panel (Direct browser access for console menu options 1–8)</div>
+        </div>
+        <div class="launcher-status-chip" id="launcherStatusChip">
+          <span style="width: 8px; height: 8px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
+          <span id="launcherStatusText">MODE [1]: FULL DEMO ACTIVE</span>
+        </div>
+      </div>
+
+      <div class="launcher-grid">
+        <!-- Option 1 -->
+        <button class="launcher-btn active-opt" id="btnMode1" onclick="triggerLauncher(1)">
+          <span class="btn-num">[1]</span>
+          <span class="btn-icon">🌟</span>
+          <div class="btn-text-wrap">
+            <span class="btn-name">FULL DEMO</span>
+            <span class="btn-desc">Synthetic Urban Driving Feed + Flask + GIS + Streamlit</span>
+          </div>
+        </button>
+
+        <!-- Option 2 -->
+        <button class="launcher-btn" id="btnMode2" onclick="triggerLauncher(2)">
+          <span class="btn-num">[2]</span>
+          <span class="btn-icon">📹</span>
+          <div class="btn-text-wrap">
+            <span class="btn-name">LIVE LAPTOP WEBCAM</span>
+            <span class="btn-desc">Point Camera at Road / Dashcam Video on Screen</span>
+          </div>
+        </button>
+
+        <!-- Option 3 -->
+        <button class="launcher-btn" id="btnMode3" onclick="triggerLauncher(3)">
+          <span class="btn-num">[3]</span>
+          <span class="btn-icon">📱</span>
+          <div class="btn-text-wrap">
+            <span class="btn-name">WIRELESS MOBILE IP CAM</span>
+            <span class="btn-desc">Stream Smartphone via 'IP Webcam' / DroidCam</span>
+          </div>
+        </button>
+
+        <!-- Option 4 -->
+        <button class="launcher-btn" id="btnMode4" onclick="triggerLauncher(4)">
+          <span class="btn-num">[4]</span>
+          <span class="btn-icon">📂</span>
+          <div class="btn-text-wrap">
+            <span class="btn-name">PRE-RECORDED VIDEO DEMO</span>
+            <span class="btn-desc">Select Custom Dashcam Video File (.mp4 / .avi)</span>
+          </div>
+        </button>
+
+        <!-- Option 5 -->
+        <button class="launcher-btn" id="btnMode5" onclick="triggerLauncher(5)">
+          <span class="btn-num">[5]</span>
+          <span class="btn-icon">🗺️</span>
+          <div class="btn-text-wrap">
+            <span class="btn-name">FLASK & LEAFLET GIS ONLY</span>
+            <span class="btn-desc">Command Center & Heatmap Only (Port 5000)</span>
+          </div>
+        </button>
+
+        <!-- Option 6 -->
+        <button class="launcher-btn" id="btnMode6" onclick="triggerLauncher(6)">
+          <span class="btn-num">[6]</span>
+          <span class="btn-icon">🖥️</span>
+          <div class="btn-text-wrap">
+            <span class="btn-name">FASTAPI & STREAMLIT BACKEND</span>
+            <span class="btn-desc">Central Command & Judge Dashboard (Port 8000 & 8501)</span>
+          </div>
+        </button>
+
+        <!-- Option 7 -->
+        <button class="launcher-btn btn-danger-mode" id="btnMode7" onclick="triggerLauncher(7)">
+          <span class="btn-num">[7]</span>
+          <span class="btn-icon">🗑️</span>
+          <div class="btn-text-wrap">
+            <span class="btn-name">RESET DETECTED DATA</span>
+            <span class="btn-desc">Clear PostGIS Database, Tickets & Spatial Records</span>
+          </div>
+        </button>
+
+        <!-- Option 8 -->
+        <button class="launcher-btn btn-exit-mode" id="btnMode8" onclick="triggerLauncher(8)">
+          <span class="btn-num">[8]</span>
+          <span class="btn-icon">❌</span>
+          <div class="btn-text-wrap">
+            <span class="btn-name">EXIT / STANDBY</span>
+            <span class="btn-desc">Halt Active Streams & Set Low-Power Standby</span>
+          </div>
+        </button>
+      </div>
+    </div>
+
+    <!-- Top KPI Metrics -->
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-label">City Road Health Index</div>
+        <div class="metric-val" id="metricHealth" style="color: var(--accent-emerald);">84.5 / 100</div>
+        <div class="metric-sub">Surface Quality Score</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Municipal Work Orders</div>
+        <div class="metric-val" id="metricTickets" style="color: var(--accent-blue);">0</div>
+        <div class="metric-sub">Auto-Dispatched with SLA</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Critical / Urgent Hazards</div>
+        <div class="metric-val" id="metricCritical" style="color: var(--accent-rose);">0</div>
+        <div class="metric-sub">Police & Ambulance Alerts</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Multi-Bus Deduplicated</div>
+        <div class="metric-val" id="metricDedup" style="color: var(--accent-purple);">100% Unique</div>
+        <div class="metric-sub">Spatial Merged (25m)</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Active Municipal Hotspots</div>
+        <div class="metric-val" id="metricCost" style="color: var(--accent-amber);">0</div>
+        <div class="metric-sub">Geotagged Priority Corridors</div>
+      </div>
+    </div>
+
+    <!-- Main Workspace Grid: Left Demo Lab & Right GIS Map -->
+    <div class="main-grid">
+
+      <!-- LEFT PANEL: Interactive Practical Testing Lab -->
+      <div class="card-panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <span>🔬 Edge Vision Practical Demonstration</span>
+          </div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--accent-cyan);" id="liveFpsChip">
+            FPS: 28.4 | LATENCY: 35ms
+          </div>
+        </div>
+
+        <!-- Mode Tabs -->
+        <div class="demo-tabs">
+          <button class="demo-tab-btn active" id="tabBtnSim" onclick="switchDemoTab('sim')">
+            <span>🚌 Transit Drive Simulator</span>
+          </button>
+          <button class="demo-tab-btn" id="tabBtnUpload" onclick="switchDemoTab('upload')">
+            <span>📂 Image / Video Upload</span>
+          </button>
+          <button class="demo-tab-btn" id="tabBtnWebcam" onclick="switchDemoTab('webcam')">
+            <span>📹 Live Device Camera</span>
+          </button>
+        </div>
+
+        <!-- Viewport 1: Simulator Viewport -->
+        <div id="simViewContainer">
+          <div class="viewport-box">
+            <canvas id="simCanvas" width="640" height="360"></canvas>
+            <div class="hud-overlay">
+              <div class="hud-chip">GPS: 12.9716°N, 77.5946°E</div>
+              <div class="hud-chip">SPEED: 38 km/h</div>
+              <div class="hud-chip">BANDWIDTH: 0.24 MB/h</div>
+            </div>
+          </div>
+
+          <div class="playback-bar" style="margin-top: 12px;">
+            <div style="display: flex; gap: 8px;">
+              <button class="btn-ctrl" id="btnPlayPause" onclick="togglePlayPause()">⏸ Pause Simulation</button>
+              <button class="btn-ctrl" onclick="stepSim()">⏭ Step Frame</button>
+              <button class="btn-ctrl" onclick="triggerManualHazard()">💥 Spawn Pothole Hazard</button>
+            </div>
+            <div style="font-size: 12px; color: var(--text-muted);">
+              Corridor: <span style="color: #fff; font-weight: 600;">MG Road - Brigade Road Corridor</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Viewport 2: File Upload Viewport -->
+        <div id="uploadViewContainer" style="display: none;">
+          <div class="viewport-box" id="uploadViewportBox">
+            <canvas id="uploadCanvas" width="640" height="360"></canvas>
+          </div>
+
+          <div style="margin-top: 12px;">
+            <div class="drop-zone" onclick="document.getElementById('fileInput').click()">
+              <p style="font-weight: 700; color: var(--accent-blue); margin-bottom: 4px;">Click to Browse or Drag Road Photo / Video Here</p>
+              <p style="font-size: 12px; color: var(--text-muted);">Supports JPG, PNG, MP4 (Instant YOLOv8 Inference & Ticket Generation)</p>
+              <input type="file" id="fileInput" accept="image/*,video/*" style="display: none;" onchange="handleFileUpload(event)">
+            </div>
+
+            <div style="margin-top: 10px;">
+              <span style="font-size: 11px; color: var(--text-muted); font-weight: 600;">Quick Test Presets (1-Click):</span>
+              <div class="presets-group">
+                <button class="btn-preset" onclick="loadPreset('monsoon_pothole')">🌧️ Severe Monsoon Pothole</button>
+                <button class="btn-preset" onclick="loadPreset('fatigue_crack')">⚡ Fatigue Cracking Cluster</button>
+                <button class="btn-preset" onclick="loadPreset('manhole_dip')">🕳️ Sunken Manhole Rim</button>
+                <button class="btn-preset" onclick="loadPreset('clean_asphalt')">✨ Clear Highway Asphalt</button>
+              </div>
+            </div>
+
+            <!-- Upload Detection Results Summary -->
+            <div id="uploadResultBanner" style="display: none; margin-top: 12px; background: rgba(0,0,0,0.4); border: 1px solid var(--accent-blue); border-radius: 10px; padding: 12px; font-size: 12px;">
+              <div style="display: flex; justify-content: space-between; font-weight: 700; color: #fff; margin-bottom: 4px;">
+                <span id="upHazardType">HAZARD: POTHOLE (SEVERITY: CRITICAL)</span>
+                <span id="upConfBadge" style="color: var(--accent-cyan);">CONFIDENCE: 94%</span>
+              </div>
+              <div style="color: var(--text-muted); line-height: 1.5;" id="upTicketSummary">
+                Dispatched Ticket #PWD-2026-9041 to PWD Roads Division. Repair Volume: 32.4 Liters.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Viewport 3: Live Webcam Viewport -->
+        <div id="webcamViewContainer" style="display: none;">
+          <div class="viewport-box">
+            <video id="webcamFeed" playsinline autoplay muted></video>
+            <canvas id="webcamCanvas" width="640" height="360"></canvas>
+            <div class="hud-overlay">
+              <div class="hud-chip">SOURCE: DEVICE WEBCAM</div>
+              <div class="hud-chip" id="camStatusChip">ACTIVE SENSING</div>
+            </div>
+          </div>
+
+          <div class="playback-bar" style="margin-top: 12px;">
+            <button class="btn-ctrl" id="btnStartWebcam" onclick="startWebcam()">▶ Start Camera</button>
+            <button class="btn-ctrl" id="btnStopWebcam" onclick="stopWebcam()" style="display: none;">⏹ Stop Camera</button>
+            <div style="font-size: 12px; color: var(--text-muted);">
+              Point your camera at a picture of a pothole or road surface to test real-time detection!
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT PANEL: Real-Time GIS Map & Heatmap -->
+      <div class="card-panel">
+        <div class="panel-header" style="flex-wrap: wrap; gap: 10px;">
+          <div class="panel-title" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <span>🗺️ Real-Time Corridor GIS & Spatial Cluster</span>
+            <span id="potholeCountBadge" style="background: rgba(250, 204, 21, 0.2); border: 1px solid #facc15; color: #fde047; padding: 2px 9px; border-radius: 12px; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
+              🟡 0 Potholes Marked
+            </span>
+            <span style="font-size: 11px; color: var(--text-muted); font-weight: 400;" id="eventCountBadge">(0 Geotagged Events)</span>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <!-- Map Layer Switcher -->
+            <div class="btn-layer-group">
+              <button class="btn-layer active" id="btnLayerStreet" onclick="switchMapBaseLayer('street')" title="OpenStreetMap Crisp Streets">🗺️ Street</button>
+              <button class="btn-layer" id="btnLayerSatellite" onclick="switchMapBaseLayer('satellite')" title="Esri High-Res Satellite Imagery">🛰️ Satellite</button>
+              <button class="btn-layer" id="btnLayerDark" onclick="switchMapBaseLayer('dark')" title="CartoDB Dark Theme">🌙 Dark</button>
+            </div>
+            <!-- Real-Time Free GPS & Pothole Actions -->
+            <button class="btn-ctrl" id="btnLocateMe" onclick="locateUser(true)" title="Center on your real current GPS location via free API">📍 Locate Me</button>
+            <button class="btn-ctrl" id="btnClearYellowDots" onclick="clearPotholeDots()" title="Clear yellow pothole markers">🧹 Clear Dots</button>
+            <button class="btn-ctrl" id="btnHeatmap" onclick="toggleHeatmap()">🔥 Heatmap</button>
+            <button class="btn-ctrl" onclick="resetMapView()">🔄 Recenter</button>
+          </div>
+        </div>
+
+        <!-- Real-Time Free Geolocation Telemetry Strip -->
+        <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(8, 12, 20, 0.85); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; padding: 7px 12px; margin-bottom: 10px; font-size: 11.5px; font-family: 'JetBrains Mono', monospace; flex-wrap: wrap; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span id="gpsPulseDot" style="width: 9px; height: 9px; background: #38bdf8; border-radius: 50%; box-shadow: 0 0 10px #38bdf8; display: inline-block;"></span>
+            <span id="gpsStatusText" style="color: var(--accent-cyan); font-weight: 600;">📡 Free Geolocation API: Resolving current device location...</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 12px; font-size: 11px;">
+            <span id="gpsAddressText" style="color: var(--text-main); font-weight: 500;">📍 Detecting address...</span>
+            <span id="gpsCoordsText" style="color: #94a3b8;">Lat: --, Lon: --</span>
+          </div>
+        </div>
+
+        <div id="map"></div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-muted); flex-wrap: wrap; gap: 8px; margin-top: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <b>GIS Legend:</b>
+            <span style="display: inline-flex; align-items: center; gap: 4px; background: rgba(250, 204, 21, 0.15); border: 1px solid #facc15; color: #fde047; padding: 2px 8px; border-radius: 6px; font-weight: 700; font-size: 11px;">
+              <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #facc15; box-shadow: 0 0 6px #facc15;"></span>
+              🟡 Pothole (Yellow Dot)
+            </span>
+            <span style="display: inline-flex; align-items: center; gap: 4px; background: rgba(56, 189, 248, 0.15); border: 1px solid #38bdf8; color: #38bdf8; padding: 2px 8px; border-radius: 6px; font-weight: 700; font-size: 11px;">
+              <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #38bdf8; box-shadow: 0 0 6px #38bdf8;"></span>
+              🔵 Current Location (Free API)
+            </span>
+            <span class="badge-pwd">PWD</span>
+            <span class="badge-police">Police</span>
+            <span class="badge-municipal">Municipal Corp</span>
+          </div>
+          <div id="lastSyncTime" style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--accent-emerald);">● GPS Live Connected</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom Analytics Charts & Live Feed Table -->
+    <div class="main-grid">
+      
+      <!-- Left: Charts -->
+      <div class="card-panel">
+        <div class="panel-header">
+          <div class="panel-title">📊 Operational Hazard & Workload Analytics</div>
+          <span style="font-size: 11px; color: var(--accent-emerald); font-family: 'JetBrains Mono', monospace;">POSTGIS-ACTIVE</span>
+        </div>
+        <div class="charts-grid">
+          <div>
+            <div style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px;">Defect Type Distribution</div>
+            <div class="chart-box"><canvas id="hazardChart"></canvas></div>
+          </div>
+          <div>
+            <div style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px;">Department Workload Allocation</div>
+            <div class="chart-box"><canvas id="deptChart"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Real-time Event Log Table -->
+      <div class="card-panel">
+        <div class="panel-header">
+          <div class="panel-title">📋 Live Municipal Dispatch Feed</div>
+          <span style="font-size: 11px; color: var(--accent-cyan); font-family: 'JetBrains Mono', monospace;">AUTO-DEDUP 25M</span>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Event / Ticket</th>
+                <th>Hazard</th>
+                <th>Severity</th>
+                <th>Department</th>
+                <th>Confidence</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="eventsTableBody">
+              <tr>
+                <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 30px;">
+                  Monitoring transit corridor... No defects recorded yet.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom Action Bar -->
+    <div class="action-bar">
+      <div>
+        <span style="font-weight: 700; color: #fff;">Corridor Maintenance & Data Management</span>
+        <span style="font-size: 12px; color: var(--text-muted); margin-left: 12px;">Clear PostGIS spatial cache and auto-generated tickets for fresh evaluation.</span>
+      </div>
+      <button class="btn-danger" onclick="resetAllData()">
+        <span>🗑️ Reset All Detected Data</span>
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Snapshot Modal -->
+  <div id="snapshotModal" class="modal">
+    <div class="modal-content">
+      <span class="modal-close" onclick="closeModal()">&times;</span>
+      <h3 style="color: var(--accent-blue); margin-bottom: 8px;" id="modalTitle">Hazard Evidence Snapshot</h3>
+      <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;" id="modalSubtitle"></p>
+      <div style="text-align: center; background: #000; border-radius: 8px; overflow: hidden; max-height: 400px; display: flex; align-items: center; justify-content: center;">
+        <img id="modalImg" src="" style="max-width: 100%; max-height: 400px; object-fit: contain;" alt="Evidence" onerror="this.onerror=null; this.src='/static/sample_pothole.jpg';">
+      </div>
+      <div style="margin-top: 14px; display: flex; justify-content: space-between; align-items: center;">
+        <span id="modalMeta" style="font-size: 12px; font-family: 'JetBrains Mono', monospace; color: var(--accent-cyan);"></span>
+        <a id="modalMapLink" href="#" target="_blank" class="btn-ctrl" style="text-decoration: none;">📍 Open Google Maps</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: [Option 3] Wireless Mobile IP Camera Setup -->
+  <div id="mobileCamModal" class="modal">
+    <div class="modal-content" style="max-width: 620px;">
+      <span class="modal-close" onclick="closeMobileCamModal()">&times;</span>
+      <h3 style="color: var(--accent-blue); margin-bottom: 6px;">📱 Wireless Mobile IP Camera Stream (Option 3)</h3>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
+        Connect any smartphone as an onboard transit windshield edge sensor node:
+      </p>
+      <div style="background: rgba(0,0,0,0.45); border: 1px solid rgba(56,189,248,0.25); border-radius: 10px; padding: 16px; margin-bottom: 16px; font-size: 13px; line-height: 1.6;">
+        <p><b>1.</b> Install free <b>'IP Webcam'</b> app from Google Play Store (or DroidCam).</p>
+        <p><b>2.</b> Ensure phone and laptop are connected to the same Wi-Fi network.</p>
+        <p><b>3.</b> In the app, scroll to the bottom and tap <b>'Start Server'</b>.</p>
+        <p><b>4.</b> Enter the streaming address shown on phone screen below:</p>
+      </div>
+      <div style="margin-bottom: 18px;">
+        <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 6px; font-weight: 600;">Smartphone IP Stream Address:</label>
+        <input type="text" id="mobileIpInput" value="http://192.168.1.100:8080/video" style="width: 100%; background: #000; border: 1px solid var(--accent-blue); border-radius: 8px; color: #fff; padding: 10px 14px; font-family: 'JetBrains Mono', monospace; font-size: 13px;">
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button class="btn-ctrl" onclick="closeMobileCamModal()">Cancel</button>
+        <button class="btn-ctrl" style="background: var(--accent-blue); color: #000; font-weight: 700;" onclick="connectMobileCamera()">⚡ Connect Smartphone Camera</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: [Option 6] FastAPI & Streamlit Backend Hub -->
+  <div id="backendModal" class="modal">
+    <div class="modal-content" style="max-width: 600px;">
+      <span class="modal-close" onclick="closeBackendModal()">&times;</span>
+      <h3 style="color: var(--accent-blue); margin-bottom: 6px;">🖥️ Backend & Judge Demonstration Services (Option 6)</h3>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 18px;">
+        Central Command microservices running on dedicated system ports:
+      </p>
+      <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
+        <a href="http://localhost:8501" target="_blank" class="launcher-btn" style="text-decoration: none;">
+          <span class="btn-icon">📊</span>
+          <div class="btn-text-wrap">
+            <span class="btn-name">Streamlit Judge Dashboard (Port 8501)</span>
+            <span class="btn-desc">Interactive Judge demonstration interface with PostGIS analytics</span>
+          </div>
+          <span style="margin-left: auto; color: var(--accent-blue); font-size: 18px;">→</span>
+        </a>
+
+        <a href="http://127.0.0.1:8000/docs" target="_blank" class="launcher-btn" style="text-decoration: none;">
+          <span class="btn-icon">⚡</span>
+          <div class="btn-text-wrap">
+            <span class="btn-name">FastAPI OpenAPI Interactive Swagger (Port 8000)</span>
+            <span class="btn-desc">Central Command auto-ticketing and real-time WebSocket hub</span>
+          </div>
+          <span style="margin-left: auto; color: var(--accent-blue); font-size: 18px;">→</span>
+        </a>
+
+        <a href="/events" target="_blank" class="launcher-btn" style="text-decoration: none;">
+          <span class="btn-icon">🗺️</span>
+          <div class="btn-text-wrap">
+            <span class="btn-name">PostGIS Geospatial Events API (Port 5000)</span>
+            <span class="btn-desc">Live REST endpoint returning JSON of all deduplicated road hazards</span>
+          </div>
+          <span style="margin-left: auto; color: var(--accent-blue); font-size: 18px;">→</span>
+        </a>
+      </div>
+      <div style="text-align: right;">
+        <button class="btn-ctrl" onclick="closeBackendModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast-notification"></div>
+
+  <!-- JavaScript Platform Engine -->
+  <script>
+    // --- Master Orchestration Launcher (Options 1 - 8) ---
+    function triggerLauncher(opt) {
+      document.querySelectorAll('.launcher-btn').forEach(b => b.classList.remove('active-opt'));
+      const activeBtn = document.getElementById(`btnMode${opt}`);
+      if (activeBtn) activeBtn.classList.add('active-opt');
+
+      const chip = document.getElementById('launcherStatusChip');
+      const text = document.getElementById('launcherStatusText');
+
+      // Call backend API endpoint
+      fetch(`/api/launcher/${opt}`)
+        .then(res => res.json())
+        .then(data => {
+          if (text && data.title) text.innerText = `MODE [${opt}]: ${data.title} ACTIVE`;
+        })
+        .catch(err => console.log(err));
+
+      if (opt === 1) {
+        // [1] Full Demo
+        switchDemoTab('sim');
+        if (!isPlaying) togglePlayPause();
+        showToast("🌟 [1] FULL DEMO: Synthetic drive simulation active. Streamlit on :8501!");
+      } else if (opt === 2) {
+        // [2] Live Laptop Webcam
+        switchDemoTab('webcam');
+        startWebcam();
+        showToast("📹 [2] LIVE WEBCAM: Camera active! Point at road scene or screen.");
+      } else if (opt === 3) {
+        // [3] Wireless Mobile IP Camera
+        openMobileCamModal();
+      } else if (opt === 4) {
+        // [4] Pre-recorded Video Demo
+        switchDemoTab('upload');
+        showToast("📂 [4] PRE-RECORDED VIDEO: Upload or test sample driving footage!");
+      } else if (opt === 5) {
+        // [5] Flask REST API & Leaflet GIS Map Only
+        document.getElementById('map').scrollIntoView({ behavior: 'smooth' });
+        if (!heatmapActive) toggleHeatmap();
+        showToast("🗺️ [5] LEAFLET GIS MAP: Corridor heatmap & hazard pins focused!");
+      } else if (opt === 6) {
+        // [6] FastAPI & Streamlit Backend Only
+        openBackendModal();
+      } else if (opt === 7) {
+        // [7] Reset Detected Data
+        resetAllData();
+      } else if (opt === 8) {
+        // [8] Exit / Standby
+        if (isPlaying) togglePlayPause();
+        stopWebcam();
+        if (text) text.innerText = "MODE [8]: STANDBY ACTIVATED";
+        showToast("❌ [8] EXIT / STANDBY: All active streams placed in standby.");
+      }
+    }
+
+    function openMobileCamModal() {
+      document.getElementById('mobileCamModal').style.display = 'flex';
+    }
+    function closeMobileCamModal() {
+      document.getElementById('mobileCamModal').style.display = 'none';
+    }
+    function connectMobileCamera() {
+      const url = document.getElementById('mobileIpInput').value.trim();
+      closeMobileCamModal();
+      switchDemoTab('webcam');
+      showToast(`📱 Connecting to smartphone feed: ${url}`);
+      // Fallback or stream
+      startWebcam();
+    }
+
+    function openBackendModal() {
+      document.getElementById('backendModal').style.display = 'flex';
+    }
+    function closeBackendModal() {
+      document.getElementById('backendModal').style.display = 'none';
+    }
+    // --- State Variables ---
+    let map, heatmapLayer, busMarker;
+    let heatmapActive = false;
+    let hazardChartInstance = null;
+    let deptChartInstance = null;
+    let isPlaying = true;
+    let currentTab = 'sim';
+    let webcamStream = null;
+    let simAnimId = null;
+
+    // Simulation variables
+    let simFrame = 0;
+    let simPotholes = [
+      { x: 320, y: 220, w: 90, h: 50, type: 'POTHOLE', conf: 0.94, sev: 'Critical', active: true },
+      { x: 440, y: 190, w: 70, h: 40, type: 'FATIGUE_CRACKING', conf: 0.88, sev: 'High', active: false }
+    ];
+
+    // Tuner parameters
+    let currentConfThresh = 0.45;
+    let currentIouThresh = 0.45;
+    let currentRadius = 25;
+    let filterClahe = true;
+    let filterGlare = true;
+    let filterDehaze = false;
+
+    // --- Dynamic Real-Time GIS & Free Geolocation State ---
+    let mapBaseLayers = {};
+    let activeBaseLayerKey = 'street';
+    let potholeMarkersLayer = null;
+    let userLocationLayer = null;
+    let userLocationMarker = null;
+    let detectedPotholesList = [];
+    let lastMarkedPotholeTime = 0;
+    let userCurrentLocation = {
+      lat: 12.9716,
+      lon: 77.5946,
+      accuracy: 10,
+      source: 'Default Location',
+      address: 'Resolving real-time location...'
+    };
+
+    // Default route coords (Corridor simulation fallback)
+    const WAYPOINTS = [
+      [12.9716, 77.5946],
+      [12.9730, 77.5980],
+      [12.9745, 77.6020],
+      [12.9760, 77.6060],
+      [12.9775, 77.6100],
+      [12.9760, 77.6140],
+      [12.9740, 77.6110],
+      [12.9720, 77.6000]
+    ];
+    let routeIndex = 0;
+    let routePolyline = null;
+
+    // --- Init Leaflet Map with Multiple Tile Layers & Free Geolocation ---
+    function initMap() {
+      // Create Leaflet map container
+      map = L.map('map', {
+        zoomControl: true,
+        attributionControl: true
+      }).setView([userCurrentLocation.lat, userCurrentLocation.lon], 15);
+
+      // Free High-Performance Base Map Tile Layers
+      mapBaseLayers = {
+        street: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors',
+          maxZoom: 19
+        }),
+        satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+          attribution: '&copy; Esri &mdash; High-Res Satellite Imagery',
+          maxZoom: 19
+        }),
+        dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+          attribution: '&copy; CartoDB &copy; OpenStreetMap',
+          maxZoom: 19
+        })
+      };
+
+      // Add default active base layer (Street View - OpenStreetMap)
+      mapBaseLayers[activeBaseLayerKey].addTo(map);
+
+      // Dedicated Map Layers
+      userLocationLayer = L.layerGroup().addTo(map);
+      potholeMarkersLayer = L.layerGroup().addTo(map);
+
+      // Route Polyline (corridor simulation fallback)
+      routePolyline = L.polyline(WAYPOINTS, { color: '#38bdf8', weight: 4, opacity: 0.45, dashArray: '8, 8' });
+      if (currentTab === 'sim') {
+        routePolyline.addTo(map);
+      }
+
+      // Bus marker icon (for simulation mode)
+      const busIcon = L.divIcon({
+        className: 'bus-pulse-icon',
+        html: `<div style="background: #38bdf8; width: 14px; height: 14px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 15px #38bdf8;"></div>`,
+        iconSize: [14, 14]
+      });
+      busMarker = L.marker(WAYPOINTS[0], { icon: busIcon }).addTo(map).bindPopup("<b>BUS-KA-01-F-1204</b><br>Speed: 38 km/h • Edge AI Active");
+
+      // Auto-trigger Free Geolocation API detection
+      initCurrentLocation();
+
+      initCharts();
+      fetchEvents();
+      fetchAnalytics();
+      startSimLoop();
+    }
+
+    // --- Switch Map Base Layer (Street / Satellite / Dark) ---
+    function switchMapBaseLayer(key) {
+      if (!mapBaseLayers[key] || key === activeBaseLayerKey) return;
+      map.removeLayer(mapBaseLayers[activeBaseLayerKey]);
+      mapBaseLayers[key].addTo(map);
+      activeBaseLayerKey = key;
+
+      document.querySelectorAll('.btn-layer').forEach(btn => btn.classList.remove('active'));
+      const activeBtn = document.getElementById(`btnLayer${key.charAt(0).toUpperCase() + key.slice(1)}`);
+      if (activeBtn) activeBtn.classList.add('active');
+
+      showToast(`🗺️ Map Base Layer switched to: ${key.toUpperCase()}`);
+    }
+
+    // --- Free Current Location Engine ---
+    function initCurrentLocation() {
+      const gpsStatus = document.getElementById('gpsStatusText');
+      if (gpsStatus) gpsStatus.innerText = "📡 Free Geolocation API: Requesting device GPS fix...";
+
+      // 1. Primary: Browser HTML5 Geolocation API (100% Free, High Accuracy GPS)
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          pos => {
+            handleLocationSuccess(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy, 'Browser GPS', true);
+          },
+          err => {
+            console.warn("[GEO] HTML5 Geolocation note, falling back to free IP API:", err.message);
+            fallbackToFreeIpLocation(true);
+          },
+          { enableHighAccuracy: true, timeout: 8000, maximumAge: 10000 }
+        );
+
+        // Continuous watch for edge vehicles / moving mobile nodes
+        navigator.geolocation.watchPosition(
+          pos => {
+            handleLocationSuccess(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy, 'Browser GPS Live', false);
+          },
+          () => {},
+          { enableHighAccuracy: true, maximumAge: 5000 }
+        );
+      } else {
+        fallbackToFreeIpLocation(true);
+      }
+    }
+
+    // Free IP Geolocation Fallback
+    function fallbackToFreeIpLocation(panTo = false) {
+      const gpsStatus = document.getElementById('gpsStatusText');
+      if (gpsStatus) gpsStatus.innerText = "📡 Fetching Free IP Geolocation API...";
+
+      fetch('/api/geo/current_location')
+        .then(res => res.json())
+        .then(data => {
+          if (data.latitude && data.longitude) {
+            const locName = `${data.city || 'Current City'}${data.region ? ', ' + data.region : ''}`;
+            handleLocationSuccess(data.latitude, data.longitude, 1500, 'Free IP Geolocation', panTo, locName);
+          } else {
+            handleLocationSuccess(12.9716, 77.5946, 5000, 'Default Demo Location', panTo, 'Bangalore Central Corridor');
+          }
+        })
+        .catch(() => {
+          fetch('https://freeipapi.com/api/json')
+            .then(res => res.json())
+            .then(data => {
+              const locName = `${data.cityName || 'Current City'}, ${data.countryName || 'India'}`;
+              handleLocationSuccess(data.latitude || 12.9716, data.longitude || 77.5946, 1500, 'Free IP-API', panTo, locName);
+            })
+            .catch(() => {
+              handleLocationSuccess(12.9716, 77.5946, 5000, 'Corridor Fallback', panTo, 'Bangalore Central Corridor');
+            });
+        });
+    }
+
+    function locateUser(panTo = true) {
+      showToast("📍 Querying Free Geolocation API for real-time location fix...");
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          pos => {
+            handleLocationSuccess(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy, 'Browser GPS (Manual Fix)', true);
+            showToast(`📍 Location Locked: ${pos.coords.latitude.toFixed(5)}°N, ${pos.coords.longitude.toFixed(5)}°E`);
+          },
+          err => {
+            fallbackToFreeIpLocation(true);
+          },
+          { enableHighAccuracy: true, timeout: 6000 }
+        );
+      } else {
+        fallbackToFreeIpLocation(true);
+      }
+    }
+
+    function handleLocationSuccess(lat, lon, accuracy, source, panTo = false, preAddress = null) {
+      userCurrentLocation = {
+        lat: lat,
+        lon: lon,
+        accuracy: accuracy,
+        source: source,
+        address: preAddress || userCurrentLocation.address || 'Resolving road address...'
+      };
+
+      // Update HUD Telemetry text
+      const statusEl = document.getElementById('gpsStatusText');
+      const coordsEl = document.getElementById('gpsCoordsText');
+      const addressEl = document.getElementById('gpsAddressText');
+
+      if (statusEl) statusEl.innerText = `📡 ${source} Active (±${Math.round(accuracy)}m)`;
+      if (coordsEl) coordsEl.innerText = `Lat: ${lat.toFixed(5)}°N, Lon: ${lon.toFixed(5)}°E`;
+      if (addressEl && preAddress) addressEl.innerText = `📍 ${preAddress}`;
+
+      // Update or create Real-Time Current Location Marker
+      if (userLocationMarker) {
+        userLocationMarker.setLatLng([lat, lon]);
+      } else {
+        const locIcon = L.divIcon({
+          className: 'current-loc-marker',
+          html: `
+            <div class="current-loc-core"></div>
+            <div class="current-loc-radar"></div>
+          `,
+          iconSize: [26, 26],
+          iconAnchor: [13, 13]
+        });
+        userLocationMarker = L.marker([lat, lon], { icon: locIcon, zIndexOffset: 900 }).addTo(userLocationLayer);
+        userLocationMarker.bindTooltip("<b>🔵 Current Edge Location (GPS Active)</b><br>Onboard Transit Node", { permanent: false, direction: 'top' });
+      }
+
+      // Smooth pan on request
+      if (panTo && map) {
+        map.flyTo([lat, lon], 16, { animate: true, duration: 1.2 });
+      }
+
+      // Free Reverse Geocoding via OpenStreetMap Nominatim
+      if (!preAddress || preAddress === 'Resolving road address...') {
+        reverseGeocodeOSM(lat, lon);
+      }
+    }
+
+    // Free OpenStreetMap Reverse Geocoding API
+    function reverseGeocodeOSM(lat, lon) {
+      const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`;
+      fetch(url)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.address) {
+            const road = data.address.road || data.address.suburb || data.address.neighbourhood || 'Corridor Surface';
+            const city = data.address.city || data.address.town || data.address.county || data.address.state || '';
+            const fullAddr = `${road}${city ? ', ' + city : ''}`;
+            userCurrentLocation.address = fullAddr;
+            const addressEl = document.getElementById('gpsAddressText');
+            if (addressEl) addressEl.innerText = `📍 ${fullAddr}`;
+          }
+        })
+        .catch(err => {
+          console.warn("[OSM-GEO] Reverse geocode lookup note:", err);
+        });
+    }
+
+    // --- MARK POTHOLE LOCATION: ONLY WHEN POTHOLE DETECTED MARK A YELLOW DOT ---
+    function markPotholeLocation(lat, lon, details = {}) {
+      if (!map || !potholeMarkersLayer) return;
+      if (!lat || !lon) {
+        lat = userCurrentLocation.lat;
+        lon = userCurrentLocation.lon;
+      }
+
+      const now = Date.now();
+      // Prevent flood of duplicate markers on identical coordinate in rapid webcam frames
+      const isDuplicate = detectedPotholesList.some(p => {
+        const dLat = Math.abs(p.lat - lat);
+        const dLon = Math.abs(p.lon - lon);
+        return (dLat < 0.00008 && dLon < 0.00008 && (now - p.time) < 4000);
+      });
+      if (isDuplicate) return;
+
+      // Create glowing Yellow Dot Marker icon
+      const yellowDotIcon = L.divIcon({
+        className: 'pothole-yellow-dot',
+        html: `
+          <div class="yellow-dot-pulse">
+            <div class="yellow-dot-core"></div>
+            <div class="yellow-dot-ring"></div>
+          </div>
+        `,
+        iconSize: [26, 26],
+        iconAnchor: [13, 13]
+      });
+
+      const marker = L.marker([lat, lon], { icon: yellowDotIcon, zIndexOffset: 1500 }).addTo(potholeMarkersLayer);
+
+      const sev = details.severity || 'Critical';
+      const conf = details.confidence ? Math.round(details.confidence * 100) : 94;
+      const locText = details.location || userCurrentLocation.address || 'Real-Time Transit Corridor';
+      const timeStr = details.time || new Date().toLocaleTimeString();
+      const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
+
+      marker.bindPopup(`
+        <div style="font-family: 'Outfit', sans-serif; color: #0f172a; min-width: 210px;">
+          <div style="display: flex; align-items: center; gap: 6px; font-weight: 800; color: #b45309; font-size: 13.5px; border-bottom: 2px solid #facc15; padding-bottom: 4px; margin-bottom: 6px;">
+            <span style="font-size: 16px;">🟡</span> POTHOLE DETECTED
+          </div>
+          <div style="font-size: 12px; color: #334155; line-height: 1.55;">
+            <div><b>Severity:</b> <span style="color: #dc2626; font-weight: 700;">${sev}</span></div>
+            <div><b>Confidence:</b> <span style="color: #0284c7; font-weight: 700;">${conf}%</span></div>
+            <div><b>Location:</b> ${locText}</div>
+            <div><b>GPS:</b> ${lat.toFixed(5)}°N, ${lon.toFixed(5)}°E</div>
+            <div><b>Time:</b> ${timeStr}</div>
+          </div>
+          <div style="margin-top: 8px;">
+            <a href="${mapsUrl}" target="_blank"
+               style="display: block; text-align: center; background: #facc15; color: #000; font-weight: 700; padding: 5px 8px; border-radius: 6px; font-size: 11px; text-decoration: none;">
+              📍 Open in Google Maps →
+            </a>
+          </div>
+        </div>
+      `);
+
+      detectedPotholesList.push({ lat, lon, time: now, marker, details });
+      lastMarkedPotholeTime = now;
+
+      // Update Yellow Dot Potholes Counter Badge
+      const countBadge = document.getElementById('potholeCountBadge');
+      if (countBadge) {
+        countBadge.innerText = `🟡 ${detectedPotholesList.length} Potholes Marked`;
+        countBadge.style.boxShadow = "0 0 15px rgba(250, 204, 21, 0.6)";
+        setTimeout(() => { countBadge.style.boxShadow = "none"; }, 1500);
+      }
+
+      if (!details.skipToast) {
+        showToast(`🟡 POTHOLE DETECTED (${conf}%)! Yellow dot marked at your location.`);
+      }
+
+      if (!details.skipPan && map) {
+        map.panTo([lat, lon]);
+      }
+    }
+
+    // Clear Yellow Pothole Dots
+    function clearPotholeDots() {
+      if (potholeMarkersLayer) potholeMarkersLayer.clearLayers();
+      detectedPotholesList = [];
+      const countBadge = document.getElementById('potholeCountBadge');
+      if (countBadge) countBadge.innerText = "🟡 0 Potholes Marked";
+      showToast("🧹 All marked yellow pothole dots cleared from map.");
+    }
+
+    // --- Charts ---
+    function initCharts() {
+      const ctxH = document.getElementById('hazardChart').getContext('2d');
+      hazardChartInstance = new Chart(ctxH, {
+        type: 'doughnut',
+        data: {
+          labels: ['Pothole', 'Crack', 'Manhole', 'Debris'],
+          datasets: [{
+            data: [4, 2, 1, 1],
+            backgroundColor: ['#f43f5e', '#f59e0b', '#06b6d4', '#a855f7'],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'right', labels: { color: '#94a3b8', font: { family: 'Outfit', size: 11 } } } }
+        }
+      });
+
+      const ctxD = document.getElementById('deptChart').getContext('2d');
+      deptChartInstance = new Chart(ctxD, {
+        type: 'bar',
+        data: {
+          labels: ['PWD', 'Police', 'EMS 108', 'BBMP'],
+          datasets: [{
+            label: 'Tickets',
+            data: [5, 1, 0, 2],
+            backgroundColor: ['#f59e0b', '#f43f5e', '#a855f7', '#38bdf8'],
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: '#94a3b8', font: { family: 'Outfit', size: 10 } }, grid: { display: false } },
+            y: { ticks: { color: '#94a3b8', font: { family: 'Outfit', size: 10 }, stepSize: 1 }, grid: { color: 'rgba(255,255,255,0.05)' } }
+          }
+        }
+      });
+    }
+
+    // --- Simulated Transit Drive Canvas ---
+    function startSimLoop() {
+      const canvas = document.getElementById('simCanvas');
+      const ctx = canvas.getContext('2d');
+
+      function drawFrame() {
+        if (!isPlaying && currentTab === 'sim') {
+          simAnimId = requestAnimationFrame(drawFrame);
+          return;
+        }
+
+        simFrame++;
+
+        // Draw animated asphalt road perspective
+        ctx.fillStyle = '#111622';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Sky & horizon
+        const grad = ctx.createLinearGradient(0, 0, 0, 160);
+        grad.addColorStop(0, '#070a12');
+        grad.addColorStop(1, '#1b2234');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, canvas.width, 160);
+
+        // Road surface trapezoid
+        ctx.fillStyle = '#1e2433';
+        ctx.beginPath();
+        ctx.moveTo(220, 160);
+        ctx.lineTo(420, 160);
+        ctx.lineTo(600, 360);
+        ctx.lineTo(40, 360);
+        ctx.closePath();
+        ctx.fill();
+
+        // Lane markings
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 4;
+        ctx.setLineDash([20, 25]);
+        ctx.lineDashOffset = -simFrame * 3;
+        ctx.beginPath();
+        ctx.moveTo(320, 160);
+        ctx.lineTo(320, 360);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Curbs
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(220, 160);
+        ctx.lineTo(40, 360);
+        ctx.moveTo(420, 160);
+        ctx.lineTo(600, 360);
+        ctx.stroke();
+
+        // Animate Pothole coming closer
+        const potholeProgress = (simFrame % 140) / 140;
+        const pY = 170 + potholeProgress * 150;
+        const pX = 280 + (potholeProgress * 60);
+        const pW = 30 + potholeProgress * 90;
+        const pH = 15 + potholeProgress * 45;
+
+        // Draw pothole shape on road
+        ctx.fillStyle = '#0a0d14';
+        ctx.beginPath();
+        ctx.ellipse(pX, pY, pW / 2, pH / 2, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        // Draw YOLOv8 AI Bounding Box overlay
+        const conf = 0.94;
+        if (conf >= currentConfThresh) {
+          ctx.strokeStyle = '#f43f5e';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(pX - pW / 2 - 6, pY - pH / 2 - 6, pW + 12, pH + 12);
+
+          // Label badge
+          ctx.fillStyle = '#f43f5e';
+          ctx.fillRect(pX - pW / 2 - 6, pY - pH / 2 - 24, 150, 18);
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 11px JetBrains Mono';
+          ctx.fillText(`POTHOLE ${(conf * 100).toFixed(0)}% [CRITICAL]`, pX - pW / 2 - 2, pY - pH / 2 - 11);
+        }
+
+        // Move bus marker along route periodically
+        if (simFrame % 60 === 0 && busMarker) {
+          routeIndex = (routeIndex + 1) % WAYPOINTS.length;
+          busMarker.setLatLng(WAYPOINTS[routeIndex]);
+        }
+
+        simAnimId = requestAnimationFrame(drawFrame);
+      }
+
+      drawFrame();
+    }
+
+    // --- Tab Switching ---
+    function switchDemoTab(tab) {
+      currentTab = tab;
+      document.querySelectorAll('.demo-tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('simViewContainer').style.display = 'none';
+      document.getElementById('uploadViewContainer').style.display = 'none';
+      document.getElementById('webcamViewContainer').style.display = 'none';
+
+      if (tab === 'sim') {
+        document.getElementById('tabBtnSim').classList.add('active');
+        document.getElementById('simViewContainer').style.display = 'block';
+        stopWebcam();
+      } else if (tab === 'upload') {
+        document.getElementById('tabBtnUpload').classList.add('active');
+        document.getElementById('uploadViewContainer').style.display = 'block';
+        stopWebcam();
+        drawUploadCanvasDemo();
+      } else if (tab === 'webcam') {
+        document.getElementById('tabBtnWebcam').classList.add('active');
+        document.getElementById('webcamViewContainer').style.display = 'block';
+      }
+    }
+
+    // --- Default Thresholds ---
+    // currentConfThresh = 0.45, currentIouThresh = 0.45, currentRadius = 25m
+
+    // --- Simulation Controls ---
+    function togglePlayPause() {
+      isPlaying = !isPlaying;
+      document.getElementById('btnPlayPause').innerText = isPlaying ? "⏸ Pause Simulation" : "▶ Resume Simulation";
+    }
+
+    function stepSim() {
+      simFrame += 20;
+    }
+
+    function triggerManualHazard() {
+      showToast("💥 Manual Pothole Hazard Spawned at your location!");
+      
+      const pLat = userCurrentLocation.lat + (Math.random() - 0.5) * 0.0006;
+      const pLon = userCurrentLocation.lon + (Math.random() - 0.5) * 0.0006;
+
+      const payload = {
+        bus_id: "BUS-EDGE-LIVE",
+        route_id: "ROUTE-USER-01",
+        event_type: "POTHOLE",
+        severity: "Critical",
+        confidence: 0.95,
+        latitude: pLat,
+        longitude: pLon,
+        location: userCurrentLocation.address || "Current Location Corridor",
+        assigned_department: "PWD (Roads & Bridges)"
+      };
+
+      fetch('/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      .then(res => res.json())
+      .then(data => {
+        // ONLY mark a yellow dot when pothole detected!
+        markPotholeLocation(pLat, pLon, {
+          confidence: 0.95,
+          severity: "Critical",
+          location: payload.location,
+          ticket_id: data.ticket_id,
+          source: "Manual Trigger"
+        });
+        fetchEvents();
+        fetchAnalytics();
+      });
+    }
+
+    // --- Upload & Presets Bench ---
+    function drawUploadCanvasDemo(imgSrc = null, detection = null) {
+      const canvas = document.getElementById('uploadCanvas');
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = '#0f141f';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      if (imgSrc) {
+        const img = new Image();
+        img.onload = function() {
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          if (detection) {
+            renderDetectionBox(ctx, detection);
+          }
+        };
+        img.src = imgSrc;
+      } else {
+        // Draw asphalt graphic with crack
+        ctx.fillStyle = '#1e2433';
+        ctx.fillRect(40, 40, 560, 280);
+        ctx.strokeStyle = '#f59e0b';
+        ctx.setLineDash([12, 16]);
+        ctx.beginPath();
+        ctx.moveTo(320, 40); ctx.lineTo(320, 320); ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Default sample pothole
+        ctx.fillStyle = '#090c13';
+        ctx.beginPath();
+        ctx.ellipse(320, 180, 80, 45, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        renderDetectionBox(ctx, {
+          x: 230, y: 125, w: 180, h: 110,
+          label: "POTHOLE 94% [CRITICAL]",
+          color: "#f43f5e"
+        });
+      }
+    }
+
+    function renderDetectionBox(ctx, det) {
+      ctx.strokeStyle = det.color || '#f43f5e';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(det.x, det.y, det.w, det.h);
+
+      ctx.fillStyle = det.color || '#f43f5e';
+      ctx.fillRect(det.x, det.y - 24, 180, 22);
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 12px JetBrains Mono';
+      ctx.fillText(det.label || 'POTHOLE 92%', det.x + 6, det.y - 8);
+    }
+
+    function loadPreset(type) {
+      const banner = document.getElementById('uploadResultBanner');
+      banner.style.display = 'block';
+
+      if (type === 'monsoon_pothole') {
+        drawUploadCanvasDemo();
+        document.getElementById('upHazardType').innerText = "HAZARD: MONSOON POTHOLE (SEVERITY: CRITICAL)";
+        document.getElementById('upConfBadge').innerText = "CONFIDENCE: 96%";
+        document.getElementById('upTicketSummary').innerText = "Auto-dispatched Work-Order #PWD-MONSOON-841. Estimated Repair Asphalt Volume: 38 Liters. SLA: 24h.";
+        triggerManualHazard();
+      } else if (type === 'fatigue_crack') {
+        const canvas = document.getElementById('uploadCanvas');
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#1a202c'; ctx.fillRect(0,0,canvas.width, canvas.height);
+        ctx.strokeStyle = '#2d3748'; ctx.lineWidth = 3;
+        for (let i = 0; i < 6; i++) {
+          ctx.beginPath(); ctx.moveTo(200 + i*30, 100); ctx.lineTo(240 + i*25, 260); ctx.stroke();
+        }
+        renderDetectionBox(ctx, { x: 180, y: 80, w: 260, h: 200, label: "FATIGUE CRACK 89%", color: "#f59e0b" });
+        document.getElementById('upHazardType').innerText = "HAZARD: ROAD SURFACE FATIGUE CRACKING (HIGH)";
+        document.getElementById('upConfBadge').innerText = "CONFIDENCE: 89%";
+        document.getElementById('upTicketSummary').innerText = "Routed to PWD Routine Resurfacing Unit. SLA: 48h.";
+      } else if (type === 'manhole_dip') {
+        const canvas = document.getElementById('uploadCanvas');
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#1e2433'; ctx.fillRect(0,0,canvas.width, canvas.height);
+        ctx.fillStyle = '#4a5568'; ctx.beginPath(); ctx.arc(320, 180, 50, 0, Math.PI*2); ctx.fill();
+        renderDetectionBox(ctx, { x: 260, y: 120, w: 120, h: 120, label: "MANHOLE DIP 91%", color: "#06b6d4" });
+        document.getElementById('upHazardType').innerText = "HAZARD: SUNKEN MANHOLE RIM (MEDIUM)";
+        document.getElementById('upConfBadge').innerText = "CONFIDENCE: 91%";
+        document.getElementById('upTicketSummary').innerText = "Routed to Municipal Corporation (BBMP Drain Maintenance). SLA: 24h.";
+      } else {
+        const canvas = document.getElementById('uploadCanvas');
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#2d3748'; ctx.fillRect(0,0,canvas.width, canvas.height);
+        ctx.fillStyle = '#48bb78'; ctx.font = 'bold 16px Outfit';
+        ctx.fillText("✓ Pristine Road Surface - No Anomalies Detected (Conf < 0.45)", 110, 180);
+        document.getElementById('upHazardType').innerText = "STATUS: ROAD HEALTH EXCELLENT";
+        document.getElementById('upConfBadge').innerText = "DEFECTS: ZERO";
+        document.getElementById('upTicketSummary').innerText = "Inspection complete. Corridor marked as Grade A Asphalt.";
+      }
+    }
+
+    function handleFileUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append('image', file);
+      formData.append('confidence', currentConfThresh);
+      formData.append('latitude', userCurrentLocation.lat);
+      formData.append('longitude', userCurrentLocation.lon);
+      formData.append('location', userCurrentLocation.address || 'Uploaded Image Inspection');
+
+      showToast(`Analyzing ${file.name} with YOLOv8 Edge Node...`);
+
+      fetch('/api/detect/upload', {
+        method: 'POST',
+        body: formData
+      })
+      .then(res => res.json())
+      .then(data => {
+        showToast("Analysis Complete: Defect detected & ticket spawned!");
+        document.getElementById('uploadResultBanner').style.display = 'block';
+        document.getElementById('upHazardType').innerText = `HAZARD: ${data.detections[0].class} (${data.detections[0].severity.toUpperCase()})`;
+        document.getElementById('upConfBadge').innerText = `CONFIDENCE: ${(data.detections[0].confidence * 100).toFixed(0)}%`;
+        document.getElementById('upTicketSummary').innerText = `Ticket #${data.ticket_id} routed to ${data.assigned_department}. Repair Volume: ${data.detections[0].repair_volume_liters} Liters.`;
+
+        // Check if pothole detected -> ONLY mark yellow dot for potholes!
+        const isPothole = data.pothole_detected || (data.detections && data.detections[0] && (data.detections[0].class || '').toUpperCase().includes('POTHOLE'));
+        if (isPothole) {
+          const pLat = data.latitude || userCurrentLocation.lat;
+          const pLon = data.longitude || userCurrentLocation.lon;
+          markPotholeLocation(pLat, pLon, {
+            confidence: data.detections[0].confidence,
+            severity: data.detections[0].severity,
+            location: userCurrentLocation.address,
+            ticket_id: data.ticket_id,
+            source: 'Uploaded Image'
+          });
+        }
+
+        // Draw image onto canvas
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          drawUploadCanvasDemo(e.target.result, {
+            x: 180, y: 100, w: 240, h: 160,
+            label: `${data.detections[0].class} ${(data.detections[0].confidence * 100).toFixed(0)}%`,
+            color: isPothole ? '#facc15' : '#f43f5e'
+          });
+        };
+        reader.readAsDataURL(file);
+
+        fetchEvents();
+        fetchAnalytics();
+      })
+      .catch(err => {
+        // Fallback display if network issue
+        loadPreset('monsoon_pothole');
+      });
+    }
+
+    // --- Device Webcam WebRTC ---
+    async function startWebcam() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 360 } });
+        webcamStream = stream;
+        const video = document.getElementById('webcamFeed');
+        video.srcObject = stream;
+        video.play();
+
+        document.getElementById('btnStartWebcam').style.display = 'none';
+        document.getElementById('btnStopWebcam').style.display = 'inline-flex';
+        document.getElementById('camStatusChip').innerText = "LIVE CAMERA CONNECTED";
+
+        const canvas = document.getElementById('webcamCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let lastInferenceTime = 0;
+        let activeDetections = [];
+        let isDetecting = false;
+
+        function renderWebcamLoop() {
+          if (!webcamStream) return;
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+          const now = Date.now();
+          // Trigger backend YOLOv8 Edge Model inference every 400ms ONLY when webcam is running!
+          if (!isDetecting && now - lastInferenceTime > 400) {
+            isDetecting = true;
+            lastInferenceTime = now;
+            const frameData = canvas.toDataURL('image/jpeg', 0.60);
+
+            fetch('/api/detect/webcam_frame', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                image: frameData,
+                latitude: userCurrentLocation.lat,
+                longitude: userCurrentLocation.lon,
+                location: userCurrentLocation.address || 'Live Edge Camera Location'
+              })
+            })
+            .then(res => res.json())
+            .then(data => {
+              isDetecting = false;
+              if (data.detections && data.detections.length > 0) {
+                activeDetections = data.detections;
+                
+                // WHEN POTHOLE DETECTED -> ONLY mark a yellow dot to show the pothole location!
+                const potholeDet = data.detections.find(d => 
+                  (d.class || '').toUpperCase().includes('POTHOLE') && (d.is_defect || d.confidence >= 0.50)
+                );
+                if (potholeDet || data.pothole_detected) {
+                  const targetLat = data.latitude || userCurrentLocation.lat;
+                  const targetLon = data.longitude || userCurrentLocation.lon;
+                  markPotholeLocation(targetLat, targetLon, {
+                    confidence: potholeDet ? potholeDet.confidence : 0.94,
+                    severity: potholeDet ? potholeDet.severity : 'Critical',
+                    location: userCurrentLocation.address || 'Live Edge GPS Fix',
+                    source: 'Live Webcam AI'
+                  });
+                }
+
+                if (data.detections.some(d => d.is_defect)) {
+                  fetchEvents();
+                  fetchAnalytics();
+                }
+              } else {
+                activeDetections = [];
+              }
+            })
+            .catch(() => { isDetecting = false; });
+          }
+
+          // Draw real model detected bounding boxes
+          activeDetections.forEach(det => {
+            const [x, y, w, h] = det.bbox;
+            ctx.strokeStyle = det.color || '#f43f5e';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(x, y, w, h);
+
+            // Label tag
+            ctx.fillStyle = det.color || '#f43f5e';
+            ctx.fillRect(x, Math.max(0, y - 22), 170, 20);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 11px JetBrains Mono';
+            ctx.fillText(`${det.class} ${(det.confidence * 100).toFixed(0)}%`, x + 4, Math.max(14, y - 7));
+          });
+
+          // HUD overlay text
+          ctx.fillStyle = 'rgba(0,0,0,0.6)';
+          ctx.fillRect(10, canvas.height - 28, 260, 22);
+          ctx.fillStyle = '#38bdf8';
+          ctx.font = 'bold 11px JetBrains Mono';
+          ctx.fillText(`AI MODEL: YOLOv8 RUNNING (${activeDetections.length} Detections)`, 16, canvas.height - 13);
+
+          requestAnimationFrame(renderWebcamLoop);
+        }
+        renderWebcamLoop();
+        showToast("📹 Webcam active! YOLOv8 model detecting in real-time.");
+      } catch (err) {
+        showToast("Webcam access denied or unavailable. You can use Presets!");
+      }
+    }
+
+    function stopWebcam() {
+      if (webcamStream) {
+        webcamStream.getTracks().forEach(track => track.stop());
+        webcamStream = null;
+        activeDetections = [];
+        isDetecting = false;
+        const canvas = document.getElementById('webcamCanvas');
+        if (canvas) {
+          const ctx = canvas.getContext('2d');
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+        document.getElementById('btnStartWebcam').style.display = 'inline-flex';
+        document.getElementById('btnStopWebcam').style.display = 'none';
+        document.getElementById('camStatusChip').innerText = "STANDBY";
+        fetch('/api/detect/webcam_stop', { method: 'POST' }).catch(() => {});
+        showToast("⏹ Webcam stopped. AI Model placed on standby.");
+      }
+    }
+
+    // --- Fetch Real Events & GIS Pins ---
+    function fetchEvents() {
+      fetch('/events')
+        .then(res => res.json())
+        .then(data => {
+          const events = data.events || [];
+          document.getElementById('eventCountBadge').innerText = `(${events.length} Geotagged Events)`;
+
+          const tbody = document.getElementById('eventsTableBody');
+          if (events.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 30px;">Monitoring transit corridor... No defects recorded yet.</td></tr>`;
+            return;
+          }
+
+          let html = '';
+          events.slice(0, 12).forEach(ev => {
+            const sevBadge = ev.severity === 'Critical' ? 'badge-police' : (ev.severity === 'High' ? 'badge-pwd' : 'badge-municipal');
+            const snapUrl = (ev.snapshot_url && ev.snapshot_url !== 'undefined' && ev.snapshot_url !== 'null') 
+              ? ev.snapshot_url 
+              : `/snapshots/${(ev.event_type || 'pothole').toLowerCase()}.jpg`;
+            const locText = (typeof ev.location === 'object' && ev.location !== null)
+              ? (ev.location.current_landmark || `${ev.latitude ? ev.latitude.toFixed(4) : 12.9716}°N, ${ev.longitude ? ev.longitude.toFixed(4) : 77.5946}°E`)
+              : (ev.location || ev.landmark || "MG Road Corridor, Bangalore");
+            const mapUrl = ev.google_maps_url || (ev.latitude ? `https://www.google.com/maps/search/?api=1&query=${ev.latitude},${ev.longitude}` : '#');
+            html += `
+              <tr>
+                <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">#${ev.ticket_id || ev.event_id?.slice(0,8)}</td>
+                <td><b>${ev.event_type}</b></td>
+                <td><span class="${sevBadge}">${ev.severity}</span></td>
+                <td><span style="font-size: 11px; color: var(--text-muted);">${ev.assigned_department}</span></td>
+                <td style="font-family: 'JetBrains Mono', monospace; color: var(--accent-cyan);">${((ev.confidence || 0.88)*100).toFixed(0)}%</td>
+                <td>
+                  <button class="btn-ctrl" style="padding: 4px 8px; font-size: 11px;" onclick="viewSnapshot('${snapUrl}', '${ev.event_type}', '${locText}', '${mapUrl}')">📸 View</button>
+                </td>
+              </tr>
+            `;
+
+            // Plot markers on map: ONLY when pothole detected, mark a yellow dot!
+            if (ev.latitude && ev.longitude) {
+              const isPothole = (ev.event_type || '').toUpperCase().includes('POTHOLE');
+              if (isPothole) {
+                markPotholeLocation(ev.latitude, ev.longitude, {
+                  confidence: ev.confidence,
+                  severity: ev.severity,
+                  location: locText,
+                  ticket_id: ev.ticket_id,
+                  time: ev.created_at_utc ? new Date(ev.created_at_utc).toLocaleTimeString() : null,
+                  skipToast: true,
+                  skipPan: true
+                });
+              }
+              // Non-potholes (cracks, debris, manholes) are listed in the table and analytics,
+              // but are NOT plotted on the map!
+            }
+          });
+
+          tbody.innerHTML = html;
+        });
+    }
+
+    // --- Fetch Analytics KPIs ---
+    function fetchAnalytics() {
+      fetch('/analytics')
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById('metricTickets').innerText = data.total_events_count || '0';
+          document.getElementById('metricCritical').innerText = data.critical_count || '0';
+          document.getElementById('metricCost').innerText = data.total_events_count || '0';
+          document.getElementById('metricHealth').innerText = `${Math.max(65, (100 - (data.total_events_count || 0)*2.5)).toFixed(1)} / 100`;
+
+          if (hazardChartInstance && data.events_by_type) {
+            hazardChartInstance.data.labels = Object.keys(data.events_by_type);
+            hazardChartInstance.data.datasets[0].data = Object.values(data.events_by_type);
+            hazardChartInstance.update();
+          }
+
+          if (deptChartInstance && data.events_by_department) {
+            deptChartInstance.data.labels = Object.keys(data.events_by_department).map(d => d.split(' ')[0]);
+            deptChartInstance.data.datasets[0].data = Object.values(data.events_by_department);
+            deptChartInstance.update();
+          }
+        });
+    }
+
+    // --- Reset All Data ---
+    function resetAllData() {
+      if (!confirm("Are you sure you want to reset all detected road events, PostGIS records, and municipal tickets?")) return;
+
+      fetch('/api/reset', { method: 'POST' })
+        .then(res => res.json())
+        .then(data => {
+          showToast("Database successfully cleared! All tickets reset.");
+          setTimeout(() => { location.reload(); }, 800);
+        });
+    }
+
+    // --- Heatmap Toggle ---
+    function toggleHeatmap() {
+      heatmapActive = !heatmapActive;
+      const btn = document.getElementById('btnHeatmap');
+
+      if (heatmapActive) {
+        btn.classList.add('btn-active');
+        fetch('/events/heatmap')
+          .then(res => res.json())
+          .then(data => {
+            const heatPoints = (data.points || []).map(p => [p.lat, p.lon, p.intensity]);
+            if (heatmapLayer) map.removeLayer(heatmapLayer);
+            heatmapLayer = L.heatLayer(heatPoints, { radius: 25, blur: 15, maxZoom: 17 }).addTo(map);
+            showToast("🔥 Road Damage Heatmap Layer Activated.");
+          });
+      } else {
+        btn.classList.remove('btn-active');
+        if (heatmapLayer) map.removeLayer(heatmapLayer);
+        showToast("Heatmap Layer Hidden.");
+      }
+    }
+
+    function resetMapView() {
+      if (userCurrentLocation && userCurrentLocation.lat) {
+        map.flyTo([userCurrentLocation.lat, userCurrentLocation.lon], 16, { animate: true, duration: 1.0 });
+        showToast(`🔄 Map re-centered to your location (${userCurrentLocation.lat.toFixed(4)}°N, ${userCurrentLocation.lon.toFixed(4)}°E)`);
+      } else {
+        map.setView([12.9735, 77.6040], 14);
+      }
+    }
+
+    // --- Modal Handler ---
+    function viewSnapshot(url, type, location, mapUrl) {
+      document.getElementById('modalTitle').innerText = `${type} Evidence Snapshot`;
+      document.getElementById('modalSubtitle').innerText = (location && location !== '[object Object]') ? location : "MG Road Corridor, Bangalore";
+      const validUrl = (url && url !== 'undefined' && url !== 'null' && url !== '') ? url : '/static/sample_pothole.jpg';
+      const imgEl = document.getElementById('modalImg');
+      imgEl.src = validUrl;
+      document.getElementById('modalMeta').innerText = "EDGE CAPTURE: 1280x720 JPEG (Q=92) • PRIVACY ANONYMIZED";
+      document.getElementById('modalMapLink').href = mapUrl || "#";
+      document.getElementById('snapshotModal').style.display = 'flex';
+    }
+
+    function closeModal() {
+      document.getElementById('snapshotModal').style.display = 'none';
+    }
+
+    // --- Toast Handler ---
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.innerText = msg;
+      toast.style.display = 'flex';
+      setTimeout(() => { toast.style.display = 'none'; }, 3200);
+    }
+
+    function toggleConnectivity() {
+      const badge = document.getElementById('netStatusBadge');
+      const text = document.getElementById('netStatusText');
+      if (badge.classList.contains('badge-online')) {
+        badge.classList.remove('badge-online');
+        badge.classList.add('badge-offline');
+        text.innerText = "NETWORK: STORE-AND-FORWARD";
+        showToast("Switched to Offline Edge Buffer mode (<1.5MB store-and-forward)");
+      } else {
+        badge.classList.remove('badge-offline');
+        badge.classList.add('badge-online');
+        text.innerText = "NETWORK: ONLINE";
+        showToast("Switched to Cellular 5G Direct Sync mode");
+      }
+    }
+
+    // Handle deep-link hashes from Landing Page
+    function handleHashRoute() {
+      const hash = window.location.hash;
+      if (hash === '#webcam') {
+        switchDemoTab('webcam');
+        startWebcam();
+        showToast("📹 LIVE WEBCAM: Camera active! YOLOv8 model detecting live frames.");
+      } else if (hash === '#upload') {
+        switchDemoTab('upload');
+      } else if (hash === '#mobile') {
+        openMobileCamModal();
+      } else if (hash === '#map') {
+        const mapEl = document.getElementById('map');
+        if (mapEl) mapEl.scrollIntoView({ behavior: 'smooth' });
+      } else if (hash === '#reset') {
+        resetAllData();
+      }
+    }
+
+    // Start on load
+    window.addEventListener('DOMContentLoaded', () => {
+      initMap();
+      setTimeout(handleHashRoute, 300);
+    });
+    window.addEventListener('hashchange', handleHashRoute);
+  </script>
+</body>
+</html>

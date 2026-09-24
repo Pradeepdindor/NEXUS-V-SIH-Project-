@@ -1,0 +1,22 @@
+# Core Computer Vision & Deep Learning
+ultralytics>=8.1.0
+opencv-python>=4.8.0
+numpy>=1.24.0
+pillow>=10.0.0
+
+# Backend & WebSockets (Phase 2)
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+websockets>=12.0
+python-multipart>=0.0.9
+aiofiles>=23.2.0
+requests>=2.31.0
+
+# Data Validation & Serialization
+pydantic>=2.5.0
+
+# Interactive Dashboard & GIS Mapping (Phase 3)
+streamlit>=1.31.0
+plotly>=5.18.0
+folium>=0.15.0
+streamlit-folium>=0.18.0
